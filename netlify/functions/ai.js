@@ -3,12 +3,23 @@ exports.handler = async (event) => {
     return { statusCode: 405, body: 'Method Not Allowed' };
   }
 
+  const key = process.env.ANTHROPIC_KEY;
+  
+  if (!key) {
+    return { 
+      statusCode: 500, 
+      headers: { 'Access-Control-Allow-Origin': '*' },
+      body: JSON.stringify({ error: 'No key found', key: 'undefined' }) 
+    };
+  }
+
   try {
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-'x-api-key': process.env.ANTHROPIC_KEY,        'anthropic-version': '2023-06-01'
+        'x-api-key': key,
+        'anthropic-version': '2023-06-01'
       },
       body: event.body
     });
