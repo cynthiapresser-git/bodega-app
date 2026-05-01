@@ -1,0 +1,865 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Bodega">
+<meta name="theme-color" content="#1A0D0F">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>ella brinda · Bodega</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --wine:#6B1F2A; --wine-light:#8B2E3D; --wine-deep:#4A1019;
+  --gold:#C8A96E; --gold-light:#E4C98A;
+  --cream:#F5F0E8; --cream-dark:#EDE5D5;
+  --dark:#1A0D0F; --dark2:#2A1418;
+  --text:#3D2226; --text-light:#7A5560;
+  --white:#FDFAF5;
+  --radius:16px; --radius-sm:10px;
+  --shadow:0 4px 24px rgba(107,31,42,.12);
+  --shadow-lg:0 16px 56px rgba(107,31,42,.2);
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bot: env(safe-area-inset-bottom, 0px);
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;overscroll-behavior:none}
+body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--text);min-height:100dvh;display:flex;flex-direction:column}
+
+/* ── APP SHELL ── */
+.app-header{
+  background:var(--dark);
+  padding:calc(var(--safe-top) + 14px) 20px 14px;
+  display:flex;align-items:center;justify-content:space-between;
+  position:sticky;top:0;z-index:90;
+  border-bottom:1px solid rgba(200,169,110,.15);
+  backdrop-filter:blur(12px);
+}
+.logo{font-family:'Playfair Display',serif;font-size:19px;color:var(--gold);letter-spacing:.01em}
+.logo em{color:var(--white);font-style:italic}
+.hstats{display:flex;gap:20px}
+.hstat{text-align:center}
+.hstat-n{font-family:'Playfair Display',serif;font-size:18px;color:var(--gold);display:block;line-height:1}
+.hstat-l{font-size:9px;color:rgba(253,250,245,.45);text-transform:uppercase;letter-spacing:.1em;margin-top:2px;display:block}
+
+.app-body{flex:1;overflow-y:auto;overscroll-behavior:contain;padding-bottom:calc(var(--safe-bot) + 80px)}
+main{max-width:1100px;margin:0 auto;padding:20px 16px}
+
+/* ── TOP BAR ── */
+.top-bar{display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap}
+.vtoggle{display:flex;background:var(--cream-dark);border-radius:var(--radius-sm);padding:3px;gap:2px;flex-shrink:0}
+.vbtn{border:none;background:none;padding:7px 12px;border-radius:8px;cursor:pointer;font-size:15px;color:var(--text-light);transition:all .2s}
+.vbtn.active{background:var(--wine);color:white;box-shadow:0 2px 8px rgba(107,31,42,.35)}
+.sbox{flex:1;min-width:160px;position:relative}
+.sbox input{width:100%;padding:10px 14px 10px 36px;border:1.5px solid var(--cream-dark);border-radius:var(--radius-sm);background:var(--white);font-family:'DM Sans',sans-serif;font-size:14px;color:var(--text);outline:none;transition:border-color .2s}
+.sbox input:focus{border-color:var(--wine)}
+.sicon{position:absolute;left:11px;top:50%;transform:translateY(-50%);font-size:14px;color:var(--text-light);pointer-events:none}
+.add-btn{background:var(--wine);color:white;border:none;padding:10px 18px;border-radius:var(--radius-sm);font-family:'DM Sans',sans-serif;font-size:14px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:7px;white-space:nowrap;box-shadow:0 2px 12px rgba(107,31,42,.3);transition:all .2s;flex-shrink:0}
+.add-btn:active{transform:scale(.97)}
+
+.fbar{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:20px;overflow-x:auto;padding-bottom:2px}
+.fbar::-webkit-scrollbar{display:none}
+.fchip{border:1.5px solid var(--cream-dark);background:var(--white);padding:6px 14px;border-radius:20px;font-size:12px;font-weight:500;cursor:pointer;color:var(--text-light);transition:all .2s;font-family:'DM Sans',sans-serif;white-space:nowrap;flex-shrink:0}
+.fchip.active,.fchip:hover{background:var(--wine);border-color:var(--wine);color:white}
+
+/* ── GRID ── */
+.grid-view{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:16px}
+.grid-view:not(.active){display:none}
+.wcard{background:var(--white);border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow);transition:transform .25s,box-shadow .25s;position:relative;animation:fadeUp .3s ease both}
+.wcard:hover{transform:translateY(-3px);box-shadow:var(--shadow-lg)}
+@keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+.wcard-img{width:100%;height:185px;background:var(--cream-dark);display:flex;align-items:center;justify-content:center;overflow:hidden;cursor:pointer;position:relative}
+.wcard-img img{width:100%;height:100%;object-fit:cover;transition:transform .4s}
+.wcard:hover .wcard-img img{transform:scale(1.04)}
+.wcard-img .img-count{position:absolute;bottom:8px;right:8px;background:rgba(26,13,15,.7);backdrop-filter:blur(4px);color:var(--gold);font-size:10px;font-weight:600;padding:3px 8px;border-radius:10px}
+.tbadge{position:absolute;top:10px;left:10px;background:rgba(26,13,15,.78);backdrop-filter:blur(8px);color:var(--gold);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;padding:3px 9px;border-radius:20px}
+.qbadge{position:absolute;top:10px;right:10px;background:var(--wine);color:white;font-size:11px;font-weight:700;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center}
+.wcard-body{padding:11px 13px 13px}
+.wcard-winery{font-size:10px;color:var(--gold);font-weight:700;text-transform:uppercase;letter-spacing:.08em;margin-bottom:2px}
+.wcard-name{font-family:'Playfair Display',serif;font-size:14px;font-weight:600;margin-bottom:5px;line-height:1.25;cursor:pointer}
+.wcard-name:hover{color:var(--wine)}
+.wcard-tags{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:9px}
+.wtag{font-size:10px;color:var(--text-light);background:var(--cream);padding:2px 7px;border-radius:8px}
+.wcard-foot{display:flex;align-items:center;justify-content:space-between}
+.wcard-price{font-size:14px;font-weight:700;color:var(--wine);font-family:'Playfair Display',serif}
+.wcard-acts{display:flex;gap:4px}
+.act{border:none;background:var(--cream);width:28px;height:28px;border-radius:7px;cursor:pointer;font-size:13px;display:flex;align-items:center;justify-content:center;transition:all .15s}
+.act:hover{background:var(--cream-dark)}
+.act.drink:hover{background:rgba(107,31,42,.15)}
+
+/* ── LIST ── */
+.list-view{display:none}
+.list-view.active{display:block}
+.ltable{width:100%;border-collapse:collapse;background:var(--white);border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow)}
+.ltable thead{background:var(--dark)}
+.ltable th{padding:12px 13px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--gold)}
+.ltable td{padding:11px 13px;font-size:13px;border-bottom:1px solid var(--cream);vertical-align:middle}
+.ltable tr:last-child td{border-bottom:none}
+.ltable tbody tr{cursor:pointer;transition:background .15s}
+.ltable tbody tr:hover td{background:var(--cream)}
+.lthumb{width:36px;height:48px;border-radius:6px;background:var(--cream-dark);overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:18px}
+.lthumb img{width:100%;height:100%;object-fit:cover}
+.lname{font-weight:600;font-family:'Playfair Display',serif;font-size:14px}
+.lwinery{font-size:10px;color:var(--gold);font-weight:700;letter-spacing:.04em}
+
+/* ── EMPTY ── */
+.empty{text-align:center;padding:72px 20px;grid-column:1/-1}
+.empty-ico{font-size:48px;opacity:.35;margin-bottom:12px}
+.empty-t{font-family:'Playfair Display',serif;font-size:19px;color:var(--text-light);margin-bottom:5px}
+.empty-s{font-size:13px;color:var(--text-light);opacity:.65}
+
+/* ── BOTTOM NAV (mobile) ── */
+.bnav{display:none;position:fixed;bottom:0;left:0;right:0;background:var(--dark);border-top:1px solid rgba(200,169,110,.12);padding:10px 0 calc(var(--safe-bot) + 10px);z-index:90}
+.bnav-inner{display:flex;justify-content:space-around;max-width:500px;margin:0 auto}
+.bnav-btn{border:none;background:none;display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;padding:4px 16px;color:rgba(253,250,245,.4);font-family:'DM Sans',sans-serif;font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:.06em;transition:color .2s}
+.bnav-btn.active{color:var(--gold)}
+.bnav-btn .bico{font-size:20px}
+@media(max-width:680px){.bnav{display:block}}
+
+/* ── MODALS ── */
+.overlay{display:none;position:fixed;inset:0;background:rgba(26,13,15,.65);backdrop-filter:blur(8px);z-index:200;align-items:flex-end;justify-content:center;padding:0}
+.overlay.open{display:flex}
+@media(min-width:681px){.overlay{align-items:center;padding:20px}}
+.modal{background:var(--white);border-radius:24px 24px 0 0;width:100%;max-width:580px;max-height:92dvh;overflow-y:auto;animation:slideUp .28s cubic-bezier(.32,1,.56,1);overscroll-behavior:contain}
+@media(min-width:681px){.modal{border-radius:24px;animation:modalPop .25s ease}}
+@keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+@keyframes modalPop{from{opacity:0;transform:scale(.94) translateY(12px)}to{opacity:1;transform:scale(1) translateY(0)}}
+.modal-drag{width:36px;height:4px;background:var(--cream-dark);border-radius:2px;margin:10px auto 0;display:block}
+@media(min-width:681px){.modal-drag{display:none}}
+.mhead{padding:18px 22px 0;display:flex;align-items:center;justify-content:space-between}
+.mtitle{font-family:'Playfair Display',serif;font-size:20px;color:var(--text)}
+.mclose{border:none;background:var(--cream);width:30px;height:30px;border-radius:8px;font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--text-light)}
+.mbody{padding:16px 22px 28px}
+
+/* ── PHOTO UPLOAD ── */
+.photo-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+.photo-slot{border:2px dashed var(--cream-dark);border-radius:12px;aspect-ratio:3/4;background:var(--cream);position:relative;overflow:hidden;transition:border-color .2s}
+/* tap button fills the entire slot — iOS Safari fires correctly on a real <button> */
+.slot-tap-btn{position:absolute;inset:0;width:100%;height:100%;background:none;border:none;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;z-index:2;-webkit-appearance:none;border-radius:10px}
+.slot-tap-btn:active{background:rgba(107,31,42,.06)}
+.photo-slot .slot-ico{font-size:28px;pointer-events:none}
+.photo-slot .slot-label{font-size:11px;font-weight:600;color:var(--text-light);text-transform:uppercase;letter-spacing:.08em;pointer-events:none;transition:opacity .2s}
+.photo-slot img.slot-photo{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:10px;z-index:1}
+.photo-slot .slot-remove{position:absolute;top:6px;right:6px;background:rgba(26,13,15,.75);color:white;border:none;width:26px;height:26px;border-radius:50%;font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:10;transition:opacity .2s;-webkit-appearance:none}
+
+.ai-btn{width:100%;background:linear-gradient(135deg,var(--wine-deep),var(--wine));color:white;border:none;padding:11px;border-radius:var(--radius-sm);font-family:'DM Sans',sans-serif;font-size:14px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:16px;transition:all .2s}
+.ai-btn:disabled{opacity:.55;cursor:not-allowed}
+.dots{display:inline-flex;gap:3px}
+.dots span{width:5px;height:5px;border-radius:50%;background:white;animation:dot 1.2s infinite}
+.dots span:nth-child(2){animation-delay:.2s}.dots span:nth-child(3){animation-delay:.4s}
+@keyframes dot{0%,80%,100%{opacity:.25}40%{opacity:1}}
+
+/* ── FORM ── */
+.fgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.fg{display:flex;flex-direction:column;gap:3px}
+.fg.full{grid-column:1/-1}
+.fg label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:var(--text-light)}
+.fg input,.fg select,.fg textarea{border:1.5px solid var(--cream-dark);border-radius:8px;padding:9px 11px;font-family:'DM Sans',sans-serif;font-size:14px;color:var(--text);background:var(--white);outline:none;transition:border-color .2s;-webkit-appearance:none}
+.fg input:focus,.fg select:focus,.fg textarea:focus{border-color:var(--wine)}
+.fg textarea{resize:vertical;min-height:58px}
+.sec-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--wine);grid-column:1/-1;margin-top:6px;padding-top:12px;border-top:1px solid var(--cream-dark)}
+.fact{display:flex;gap:8px;margin-top:16px}
+.btn-s{flex:1;background:var(--wine);color:white;border:none;padding:13px;border-radius:var(--radius-sm);font-family:'DM Sans',sans-serif;font-size:14px;font-weight:700;cursor:pointer;transition:background .2s}
+.btn-s:hover{background:var(--wine-light)}
+.btn-c{background:var(--cream);color:var(--text-light);border:none;padding:13px 18px;border-radius:var(--radius-sm);font-family:'DM Sans',sans-serif;font-size:14px;cursor:pointer}
+
+/* ── DETAIL ── */
+#det-modal .modal{max-width:640px}
+.det-hero{position:relative;width:100%;height:280px;background:var(--dark);border-radius:24px 24px 0 0;overflow:hidden}
+@media(min-width:681px){.det-hero{border-radius:24px 24px 0 0}}
+.det-hero-media{width:100%;height:100%;position:relative}
+.hero-img-main,.hero-img-back{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transition:opacity .4s}
+.hero-emoji{width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:90px}
+.hero-overlay{position:absolute;inset:0;background:linear-gradient(to top,rgba(26,13,15,.9) 0%,rgba(26,13,15,.1) 60%)}
+.det-hero-close{position:absolute;top:14px;right:14px;z-index:10;background:rgba(26,13,15,.6);backdrop-filter:blur(6px);color:white;border:none;width:32px;height:32px;border-radius:8px;font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+/* Photo toggle pills */
+.photo-toggle{position:absolute;bottom:68px;left:50%;transform:translateX(-50%);display:flex;gap:6px;z-index:10}
+.ptog{width:28px;height:4px;border-radius:2px;background:rgba(253,250,245,.35);border:none;cursor:pointer;transition:all .2s;padding:0}
+.ptog.active{background:var(--gold);width:36px}
+.det-hero-info{position:absolute;bottom:0;left:0;right:0;padding:16px 20px}
+.det-tbadge{display:inline-block;background:rgba(200,169,110,.18);border:1px solid rgba(200,169,110,.5);color:var(--gold);font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;padding:3px 9px;border-radius:20px;margin-bottom:5px}
+.det-winery{font-size:11px;color:rgba(253,250,245,.55);text-transform:uppercase;letter-spacing:.1em;font-weight:600}
+.det-name{font-family:'Playfair Display',serif;font-size:22px;color:white;font-weight:700;line-height:1.2}
+.det-vintage{font-family:'Playfair Display',serif;font-size:16px;color:var(--gold);font-style:italic}
+
+.det-body{padding:18px 20px 24px}
+.dchips{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:16px}
+.dchip{background:var(--cream);border:1px solid var(--cream-dark);padding:4px 11px;border-radius:20px;font-size:11px;color:var(--text)}
+.dstats{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:18px}
+.dstat{background:var(--cream);border-radius:10px;padding:11px 13px}
+.dstat-l{font-size:9px;text-transform:uppercase;letter-spacing:.09em;color:var(--text-light);font-weight:700;margin-bottom:2px}
+.dstat-v{font-family:'Playfair Display',serif;font-size:17px;color:var(--wine);font-weight:600}
+.dsec{margin-bottom:16px}
+.dsec-t{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--gold);margin-bottom:6px}
+.dsec-txt{font-size:14px;color:var(--text);line-height:1.65}
+.dsec-txt em{color:var(--text-light);font-style:normal}
+.ai-gen-btn{width:100%;background:var(--cream);border:1.5px solid var(--cream-dark);color:var(--wine);font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;padding:9px;border-radius:var(--radius-sm);cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:6px;margin-top:8px}
+.ai-gen-btn:hover{border-color:var(--wine);background:rgba(107,31,42,.06)}
+.ai-gen-btn:disabled{opacity:.55;cursor:not-allowed}
+
+.loglist{list-style:none;display:flex;flex-direction:column;gap:5px;margin-top:5px}
+.logitem{background:var(--cream);border-radius:8px;padding:8px 12px}
+.logdate{font-weight:700;color:var(--text);font-size:12px;margin-bottom:1px}
+.lognote{color:var(--text-light);font-size:13px;font-style:italic}
+
+.det-acts{display:flex;gap:8px;margin-top:18px;padding-top:16px;border-top:1px solid var(--cream-dark)}
+.btn-drink{flex:1;background:var(--wine);color:white;border:none;padding:13px;border-radius:var(--radius-sm);font-family:'DM Sans',sans-serif;font-size:14px;font-weight:700;cursor:pointer;transition:background .2s}
+.btn-drink:hover{background:var(--wine-light)}
+.btn-edit-d{background:var(--cream);color:var(--text);border:none;padding:13px 16px;border-radius:var(--radius-sm);font-family:'DM Sans',sans-serif;font-size:14px;cursor:pointer}
+
+/* ── LOG MODAL ── */
+#log-modal .modal{max-width:420px}
+
+/* ── INSTALL BANNER ── */
+.install-banner{display:none;position:fixed;bottom:calc(var(--safe-bot) + 72px);left:50%;transform:translateX(-50%);background:var(--dark);color:var(--white);padding:12px 18px;border-radius:12px;font-size:13px;font-weight:500;box-shadow:0 8px 32px rgba(0,0,0,.35);z-index:400;align-items:center;gap:12px;max-width:360px;width:calc(100% - 32px);animation:fadeUp .4s ease}
+.install-banner.show{display:flex}
+.install-banner button{border:none;background:var(--wine);color:white;padding:7px 14px;border-radius:8px;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap}
+.install-banner .inst-close{background:none;color:rgba(253,250,245,.45);padding:4px;font-size:16px}
+
+/* ── TOAST ── */
+.toast{position:fixed;bottom:calc(var(--safe-bot) + 82px);left:50%;transform:translateX(-50%) translateY(20px);background:var(--dark);color:var(--gold);padding:11px 18px;border-radius:10px;font-size:13px;font-weight:500;box-shadow:0 8px 28px rgba(0,0,0,.3);z-index:500;opacity:0;transition:all .3s;pointer-events:none;white-space:nowrap;max-width:calc(100% - 32px)}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+@media(min-width:681px){.toast{bottom:24px}}
+
+@media(max-width:400px){
+  .grid-view{grid-template-columns:1fr 1fr}
+  .hstats{gap:12px}
+  .hstat-n{font-size:16px}
+}
+</style>
+</head>
+<body>
+
+<header class="app-header">
+  <div class="logo"><em>ella</em> brinda · Bodega</div>
+  <div class="hstats">
+    <div class="hstat"><span class="hstat-n" id="s-labels">0</span><span class="hstat-l">Etiquetas</span></div>
+    <div class="hstat"><span class="hstat-n" id="s-bottles">0</span><span class="hstat-l">Botellas</span></div>
+    <div class="hstat"><span class="hstat-n" id="s-value">$0</span><span class="hstat-l">Valor</span></div>
+  </div>
+</header>
+
+<div class="app-body">
+  <main>
+    <div class="top-bar">
+      <div class="vtoggle">
+        <button class="vbtn active" id="btn-grid" onclick="setView('grid')">⊞</button>
+        <button class="vbtn" id="btn-list" onclick="setView('list')">☰</button>
+      </div>
+      <div class="sbox">
+        <span class="sicon">🔍</span>
+        <input type="text" id="search" placeholder="Buscar vino, bodega, ocasión…" oninput="renderWines()">
+      </div>
+      <button class="add-btn" onclick="openEdit()">＋ Agregar</button>
+    </div>
+    <div class="fbar">
+      <button class="fchip active" onclick="setFilter('Todos',this)">Todos</button>
+      <button class="fchip" onclick="setFilter('Tinto',this)">🍷 Tintos</button>
+      <button class="fchip" onclick="setFilter('Blanco',this)">🥂 Blancos</button>
+      <button class="fchip" onclick="setFilter('Rosado',this)">🌸 Rosados</button>
+      <button class="fchip" onclick="setFilter('Espumante',this)">✨ Espumantes</button>
+      <button class="fchip" onclick="setFilter('Champagne',this)">🍾 Champagne</button>
+    </div>
+    <div class="grid-view active" id="grid-view"></div>
+    <div class="list-view" id="list-view"></div>
+  </main>
+</div>
+
+<!-- Bottom nav mobile -->
+<nav class="bnav">
+  <div class="bnav-inner">
+    <button class="bnav-btn active" onclick="setView('grid');setNavActive(this)"><span class="bico">⊞</span>Grilla</button>
+    <button class="bnav-btn" onclick="setView('list');setNavActive(this)"><span class="bico">☰</span>Lista</button>
+    <button class="bnav-btn" onclick="openEdit()"><span class="bico">＋</span>Agregar</button>
+  </div>
+</nav>
+
+<!-- ═══ ADD/EDIT MODAL ═══ -->
+<div class="overlay" id="edit-modal" onclick="closeOut(event,'edit-modal')">
+  <div class="modal">
+    <span class="modal-drag"></span>
+    <div class="mhead">
+      <div class="mtitle" id="edit-title">Agregar vino</div>
+      <button class="mclose" onclick="closeM('edit-modal')">✕</button>
+    </div>
+    <div class="mbody">
+
+      <!-- DOUBLE PHOTO — inputs viven fuera del modal para compatibilidad con Safari iOS -->
+      <div class="photo-grid">
+        <!-- FRONT -->
+        <div class="photo-slot" id="slot-front">
+          <button type="button" class="slot-tap-btn" onclick="triggerPhoto('front')">
+            <span class="slot-ico" id="slot-front-ico">📷</span>
+            <span class="slot-label" id="slot-front-lbl">Frente</span>
+          </button>
+          <img class="slot-photo" id="slot-front-img" src="" alt="" style="display:none">
+          <button type="button" class="slot-remove" id="slot-front-rm" onclick="removePhoto('front',event)" style="opacity:0">✕</button>
+        </div>
+        <!-- BACK -->
+        <div class="photo-slot" id="slot-back">
+          <button type="button" class="slot-tap-btn" onclick="triggerPhoto('back')">
+            <span class="slot-ico" id="slot-back-ico">📷</span>
+            <span class="slot-label" id="slot-back-lbl">Dorso</span>
+          </button>
+          <img class="slot-photo" id="slot-back-img" src="" alt="" style="display:none">
+          <button type="button" class="slot-remove" id="slot-back-rm" onclick="removePhoto('back',event)" style="opacity:0">✕</button>
+        </div>
+      </div>
+
+      <button class="ai-btn" id="ai-id-btn" onclick="identifyWine()" disabled>
+        <span>✨</span> Identificar con IA
+      </button>
+
+      <div class="fgrid">
+        <div class="fg full"><label>Nombre del vino *</label><input type="text" id="f-name" placeholder="ej. Gran Reserva Malbec"></div>
+        <div class="fg"><label>Bodega *</label><input type="text" id="f-winery" placeholder="ej. Zuccardi"></div>
+        <div class="fg"><label>Añada</label><input type="text" id="f-vintage" placeholder="ej. 2022"></div>
+        <div class="fg"><label>Tipo</label>
+          <select id="f-type">
+            <option value="Tinto">Tinto</option><option value="Blanco">Blanco</option>
+            <option value="Rosado">Rosado</option><option value="Espumante">Espumante</option>
+            <option value="Champagne">Champagne</option><option value="Otro">Otro</option>
+          </select>
+        </div>
+        <div class="fg"><label>Varietal</label><input type="text" id="f-grape" placeholder="ej. Malbec"></div>
+        <div class="fg"><label>Región</label><input type="text" id="f-region" placeholder="ej. Valle de Uco"></div>
+        <div class="fg"><label>País</label><input type="text" id="f-country" placeholder="ej. Argentina"></div>
+        <div class="fg"><label>Precio ($)</label><input type="number" id="f-price" placeholder="0"></div>
+        <div class="fg"><label>Botellas</label><input type="number" id="f-qty" value="1" min="1"></div>
+        <div class="sec-label">📝 Cata & Maridaje</div>
+        <div class="fg full"><label>Notas de cata</label><textarea id="f-tasting" placeholder="Color, nariz, boca… o generalo con IA después"></textarea></div>
+        <div class="fg full"><label>Ocasión recomendada</label><input type="text" id="f-occasion" placeholder="ej. Asado, cena romántica, aperitivo…"></div>
+        <div class="fg full"><label>Notas personales</label><textarea id="f-notes" placeholder="Dónde lo compraste, con quién lo tomás…"></textarea></div>
+      </div>
+      <div class="fact">
+        <button class="btn-c" onclick="closeM('edit-modal')">Cancelar</button>
+        <button class="btn-s" onclick="saveWine()">Guardar en bodega</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ DETAIL MODAL ═══ -->
+<div class="overlay" id="det-modal" onclick="closeOut(event,'det-modal')">
+  <div class="modal">
+    <div class="det-hero">
+      <button class="det-hero-close" onclick="closeM('det-modal')">✕</button>
+      <div class="det-hero-media" id="d-media"></div>
+      <div class="hero-overlay"></div>
+      <div class="photo-toggle" id="d-photo-toggle"></div>
+      <div class="det-hero-info">
+        <div class="det-tbadge" id="d-tbadge"></div>
+        <div class="det-winery" id="d-winery"></div>
+        <div class="det-name" id="d-name"></div>
+        <div class="det-vintage" id="d-vintage"></div>
+      </div>
+    </div>
+    <div class="det-body">
+      <div class="dchips" id="d-chips"></div>
+      <div class="dstats" id="d-stats"></div>
+      <div class="dsec" id="d-tasting-sec">
+        <div class="dsec-t">🍷 Notas de cata</div>
+        <div class="dsec-txt" id="d-tasting"></div>
+        <button class="ai-gen-btn" id="d-ai-btn" onclick="generateNotes()">✨ Generar notas con IA</button>
+      </div>
+      <div class="dsec" id="d-occasion-sec" style="display:none">
+        <div class="dsec-t">🕯️ Cuándo tomarlo</div>
+        <div class="dsec-txt" id="d-occasion"></div>
+      </div>
+      <div class="dsec" id="d-notes-sec" style="display:none">
+        <div class="dsec-t">📌 Notas personales</div>
+        <div class="dsec-txt" id="d-notes"></div>
+      </div>
+      <div class="dsec">
+        <div class="dsec-t">📖 Historial de consumo</div>
+        <ul class="loglist" id="d-log"></ul>
+        <div id="d-nolog" style="font-size:13px;color:var(--text-light);margin-top:4px"></div>
+      </div>
+      <div class="det-acts">
+        <button class="btn-drink" onclick="openLog()">🥂 Registrar consumo</button>
+        <button class="btn-edit-d" onclick="editFromDetail()">✏️ Editar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ LOG MODAL ═══ -->
+<div class="overlay" id="log-modal" onclick="closeOut(event,'log-modal')">
+  <div class="modal">
+    <span class="modal-drag"></span>
+    <div class="mhead">
+      <div class="mtitle">🥂 Registrar consumo</div>
+      <button class="mclose" onclick="closeM('log-modal')">✕</button>
+    </div>
+    <div class="mbody">
+      <div class="fgrid">
+        <div class="fg full"><label>Fecha</label><input type="date" id="log-date"></div>
+        <div class="fg full"><label>Botellas consumidas</label><input type="number" id="log-qty" value="1" min="1"></div>
+        <div class="fg full"><label>Nota rápida (opcional)</label><textarea id="log-note" placeholder="¿Con quién la tomaste? ¿Qué comieron?" style="min-height:72px"></textarea></div>
+      </div>
+      <div class="fact">
+        <button class="btn-c" onclick="closeM('log-modal')">Cancelar</button>
+        <button class="btn-s" onclick="saveLog()">Registrar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Install banner -->
+<div class="install-banner" id="install-banner">
+  <span>📱 Instalá la app en tu celu</span>
+  <button onclick="installApp()">Instalar</button>
+  <button class="inst-close" onclick="dismissInstall()">✕</button>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ── API KEY — reemplazá este valor con tu key de console.anthropic.com ──
+const ANTHROPIC_KEY = 'PEGAR_TU_KEY_AQUI';
+
+// ── STATE ──
+let wines = JSON.parse(localStorage.getItem('eb_wines') || '[]');
+let filter = 'Todos', view = 'grid';
+let editId = null, detId = null;
+let photos = { front: null, back: null }; // {url, b64}
+let deferredPrompt = null;
+
+// Demo data
+if (!wines.length) {
+  wines = [
+    { id:1, name:'Brut Yellow Label', winery:'Veuve Clicquot', vintage:'NV', type:'Champagne', grape:'Pinot Noir, Chardonnay, Meunier', region:'Champagne', country:'Francia', price:170000, qty:1, tasting:'Burbujas finas y persistentes. Nariz de brioche tostado, manzana verde y vainilla. Boca fresca, equilibrada, final elegante y largo.', occasion:'Aperitivo, celebraciones, maridaje con ostras o sushi.', notes:'', log:[], photos:{front:null,back:null} },
+    { id:2, name:'Rosé Malbec', winery:'Cuvelier Los Andes', vintage:'2023', type:'Rosado', grape:'Malbec', region:'Valle de Uco, Mendoza', country:'Argentina', price:28000, qty:2, tasting:'Color salmón brillante. Aromas de frutilla fresca y pétalos de rosa. Boca fresca, ligera y muy bebible.', occasion:'Almuerzo de verano, tapas y quesos frescos.', notes:'Excelente relación precio-calidad.', log:[], photos:{front:null,back:null} }
+  ];
+  save();
+}
+
+function save() {
+  try {
+    localStorage.setItem('eb_wines', JSON.stringify(wines));
+  } catch(e) {
+    const slim = wines.map(w=>({...w, photos:{front:null,frontB64:null,back:null,backB64:null}}));
+    try { localStorage.setItem('eb_wines', JSON.stringify(slim)); } catch(e2){}
+    showToast('⚠️ Fotos no guardadas: almacenamiento lleno.');
+  }
+  updateStats();
+}
+function updateStats() {
+  const tot = wines.reduce((a,w)=>a+(w.qty||1),0);
+  const val = wines.reduce((a,w)=>a+(w.price||0)*(w.qty||1),0);
+  document.getElementById('s-labels').textContent = wines.length;
+  document.getElementById('s-bottles').textContent = tot;
+  document.getElementById('s-value').textContent = val>0?'$'+Math.round(val/1000)+'k':'$0';
+}
+function emo(t) { return {Tinto:'🍷',Blanco:'🥂',Rosado:'🌸',Espumante:'✨',Champagne:'🍾',Otro:'🫙'}[t]||'🍷'; }
+function setFilter(f,el) { filter=f; document.querySelectorAll('.fchip').forEach(c=>c.classList.remove('active')); el.classList.add('active'); renderWines(); }
+function setView(v) {
+  view=v;
+  document.getElementById('btn-grid').classList.toggle('active',v==='grid');
+  document.getElementById('btn-list').classList.toggle('active',v==='list');
+  document.getElementById('grid-view').classList.toggle('active',v==='grid');
+  document.getElementById('list-view').classList.toggle('active',v==='list');
+  renderWines();
+}
+function setNavActive(el) { document.querySelectorAll('.bnav-btn').forEach(b=>b.classList.remove('active')); el.classList.add('active'); }
+function getFiltered() {
+  const q = document.getElementById('search').value.toLowerCase();
+  return wines.filter(w => {
+    const mf = filter==='Todos' || w.type===filter;
+    const ms = !q || [w.name,w.winery,w.grape,w.region,w.tasting,w.occasion,w.notes].join(' ').toLowerCase().includes(q);
+    return mf && ms;
+  });
+}
+
+function renderWines() { const f=getFiltered(); renderGrid(f); renderList(f); updateStats(); }
+
+function imgEl(w) {
+  const fp = w.photos?.front;
+  return fp ? `<img src="${fp}" alt="">` : `<span style="font-size:52px">${emo(w.type)}</span>`;
+}
+function hasPhotos(w) { return !!(w.photos?.front || w.photos?.back); }
+function photoCount(w) { return (w.photos?.front?1:0)+(w.photos?.back?1:0); }
+
+function renderGrid(f) {
+  const el=document.getElementById('grid-view');
+  if (!f.length) { el.innerHTML=`<div class="empty"><div class="empty-ico">🍷</div><div class="empty-t">Tu bodega está vacía</div><div class="empty-s">Tocá + Agregar para empezar</div></div>`; return; }
+  el.innerHTML=f.map(w=>`
+    <div class="wcard">
+      <div class="wcard-img" onclick="openDetail(${w.id})">
+        ${imgEl(w)}
+        ${photoCount(w)>1?`<span class="img-count">📷 2</span>`:''}
+      </div>
+      <div class="tbadge">${w.type}</div>
+      <div class="qbadge">${w.qty||1}</div>
+      <div class="wcard-body">
+        <div class="wcard-winery">${w.winery}</div>
+        <div class="wcard-name" onclick="openDetail(${w.id})">${w.name}${w.vintage?' '+w.vintage:''}</div>
+        <div class="wcard-tags">
+          ${w.grape?`<span class="wtag">${w.grape}</span>`:''}
+          ${w.region?`<span class="wtag">${w.region}</span>`:''}
+        </div>
+        <div class="wcard-foot">
+          <div class="wcard-price">${w.price?'$'+Number(w.price).toLocaleString('es-AR'):'—'}</div>
+          <div class="wcard-acts" onclick="event.stopPropagation()">
+            <button class="act drink" onclick="quickLog(${w.id})" title="Consumir">🥂</button>
+            <button class="act" onclick="openDetail(${w.id})" title="Ficha">📋</button>
+            <button class="act" onclick="editWine(${w.id})" title="Editar">✏️</button>
+            <button class="act" onclick="deleteWine(${w.id})" title="Eliminar">🗑️</button>
+          </div>
+        </div>
+      </div>
+    </div>`).join('');
+}
+
+function renderList(f) {
+  const el=document.getElementById('list-view');
+  if (!f.length) { el.innerHTML=`<div class="empty"><div class="empty-ico">🍷</div><div class="empty-t">Tu bodega está vacía</div></div>`; return; }
+  el.innerHTML=`<table class="ltable"><thead><tr><th></th><th>Vino</th><th>Tipo</th><th>Varietal</th><th>Precio</th><th>Cant.</th><th></th></tr></thead><tbody>
+  ${f.map(w=>`<tr onclick="openDetail(${w.id})">
+    <td><div class="lthumb">${w.photos?.front?`<img src="${w.photos.front}">`:(emo(w.type))}</div></td>
+    <td><div class="lname">${w.name}</div><div class="lwinery">${w.winery} ${w.vintage||''}</div></td>
+    <td>${w.type}</td><td>${w.grape||'—'}</td>
+    <td>${w.price?'$'+Number(w.price).toLocaleString('es-AR'):'—'}</td>
+    <td style="text-align:center;font-weight:700">${w.qty||1}</td>
+    <td onclick="event.stopPropagation()"><div class="wcard-acts">
+      <button class="act drink" onclick="quickLog(${w.id})">🥂</button>
+      <button class="act" onclick="editWine(${w.id})">✏️</button>
+      <button class="act" onclick="deleteWine(${w.id})">🗑️</button>
+    </div></td></tr>`).join('')}
+  </tbody></table>`;
+}
+
+// ── DETAIL ──
+let heroPhotoShowing = 'front';
+function openDetail(id) {
+  detId=id;
+  const w=wines.find(x=>x.id===id); if (!w) return;
+  heroPhotoShowing='front';
+
+  // Hero media
+  const hasFront = !!w.photos?.front;
+  const hasBack  = !!w.photos?.back;
+  const media = document.getElementById('d-media');
+
+  if (hasFront || hasBack) {
+    const frontSrc = w.photos?.front || '';
+    const backSrc  = w.photos?.back  || '';
+    media.innerHTML=`
+      ${frontSrc?`<img class="hero-img-main" id="hi-front" src="${frontSrc}" style="opacity:1">`:''}
+      ${backSrc ?`<img class="hero-img-main" id="hi-back"  src="${backSrc}"  style="opacity:0;position:absolute;inset:0;width:100%;height:100%;object-fit:cover">`:''}`;
+  } else {
+    media.innerHTML=`<div class="hero-emoji">${emo(w.type)}</div>`;
+  }
+
+  // Photo toggle pills
+  const tog = document.getElementById('d-photo-toggle');
+  if (hasFront && hasBack) {
+    tog.innerHTML=`
+      <button class="ptog active" id="pt-front" onclick="switchHeroPhoto('front')"></button>
+      <button class="ptog" id="pt-back" onclick="switchHeroPhoto('back')"></button>`;
+    tog.style.display='flex';
+  } else { tog.style.display='none'; }
+
+  document.getElementById('d-tbadge').textContent=w.type;
+  document.getElementById('d-winery').textContent=w.winery;
+  document.getElementById('d-name').textContent=w.name;
+  document.getElementById('d-vintage').textContent=w.vintage||'';
+  document.getElementById('d-chips').innerHTML=[w.grape,w.region,w.country].filter(Boolean).map(c=>`<div class="dchip">${c}</div>`).join('');
+  document.getElementById('d-stats').innerHTML=`
+    <div class="dstat"><div class="dstat-l">Precio unitario</div><div class="dstat-v">${w.price?'$'+Number(w.price).toLocaleString('es-AR'):'—'}</div></div>
+    <div class="dstat"><div class="dstat-l">En bodega</div><div class="dstat-v">${w.qty||1} 🍾</div></div>`;
+
+  const tEl=document.getElementById('d-tasting');
+  const aiBtn=document.getElementById('d-ai-btn');
+  if (w.tasting) { tEl.textContent=w.tasting; aiBtn.innerHTML='✨ Regenerar notas con IA'; }
+  else { tEl.innerHTML='<em>Sin notas todavía.</em>'; aiBtn.innerHTML='✨ Generar notas con IA'; }
+  aiBtn.disabled=false;
+
+  const oSec=document.getElementById('d-occasion-sec');
+  if (w.occasion) { document.getElementById('d-occasion').textContent=w.occasion; oSec.style.display='block'; }
+  else oSec.style.display='none';
+  const nSec=document.getElementById('d-notes-sec');
+  if (w.notes) { document.getElementById('d-notes').textContent=w.notes; nSec.style.display='block'; }
+  else nSec.style.display='none';
+
+  const log=w.log||[];
+  const logEl=document.getElementById('d-log');
+  const nolog=document.getElementById('d-nolog');
+  if (log.length) {
+    nolog.textContent='';
+    logEl.innerHTML=log.slice().reverse().map(l=>`<li class="logitem">
+      <div class="logdate">${l.date}${l.qty>1?' · '+l.qty+' botellas':''}</div>
+      ${l.note?`<div class="lognote">"${l.note}"</div>`:''}
+    </li>`).join('');
+  } else { logEl.innerHTML=''; nolog.textContent='Todavía no registraste ninguna apertura.'; }
+
+  document.getElementById('det-modal').classList.add('open');
+}
+
+function switchHeroPhoto(side) {
+  heroPhotoShowing=side;
+  const front=document.getElementById('hi-front');
+  const back=document.getElementById('hi-back');
+  const ptF=document.getElementById('pt-front');
+  const ptB=document.getElementById('pt-back');
+  if (front) front.style.opacity = side==='front'?'1':'0';
+  if (back)  back.style.opacity  = side==='back' ?'1':'0';
+  if (ptF) ptF.classList.toggle('active',side==='front');
+  if (ptB) ptB.classList.toggle('active',side==='back');
+}
+
+function editFromDetail() { closeM('det-modal'); setTimeout(()=>editWine(detId),150); }
+
+// ── LOG ──
+function openLog() { document.getElementById('log-date').value=new Date().toISOString().split('T')[0]; document.getElementById('log-qty').value=1; document.getElementById('log-note').value=''; document.getElementById('log-modal').classList.add('open'); }
+function quickLog(id) { detId=id; openLog(); }
+function saveLog() {
+  const w=wines.find(x=>x.id===detId); if (!w) return;
+  const qty=parseInt(document.getElementById('log-qty').value)||1;
+  if (qty>(w.qty||1)) { showToast('⚠️ No tenés tantas botellas en stock.'); return; }
+  if (!w.log) w.log=[];
+  w.log.push({ date:document.getElementById('log-date').value, qty, note:document.getElementById('log-note').value.trim() });
+  w.qty=(w.qty||1)-qty;
+  save(); closeM('log-modal');
+  showToast(`🥂 ¡Salud! Quedan ${w.qty} botellas de ${w.name}.`);
+  if (document.getElementById('det-modal').classList.contains('open')) openDetail(detId);
+  else renderWines();
+}
+
+// ── AI NOTES ──
+async function generateNotes() {
+  const w=wines.find(x=>x.id===detId); if (!w) return;
+  const btn=document.getElementById('d-ai-btn');
+  btn.disabled=true; btn.innerHTML=`<div class="dots"><span></span><span></span><span></span></div> Generando...`;
+  try {
+    const prompt=`Sos sommelier experta. Generá notas para este vino en español argentino, informal pero elegante.
+Vino: ${w.name} ${w.vintage||''} · Bodega: ${w.winery}
+Tipo: ${w.type} · Varietal: ${w.grape||''} · Región: ${w.region||''}, ${w.country||''}
+Respondé SOLO con JSON válido sin markdown:
+{"tasting":"notas de cata: color, nariz, boca, final (3-4 oraciones vívidas)","occasion":"para qué momento es ideal y con qué maridarlo (1-2 oraciones)"}`;
+    const imgB64 = w.photos?.frontB64 || w.photos?.backB64 || null;
+    const content = imgB64
+      ? [{type:'image',source:{type:'base64',media_type:'image/jpeg',data:imgB64}},{type:'text',text:prompt}]
+      : prompt;
+    const res=await fetch('/api/ai',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:700,messages:[{role:'user',content}]})});
+    const data=await res.json();
+    const info=JSON.parse((data.content?.find(c=>c.type==='text')?.text||'').replace(/```json|```/g,'').trim());
+    if (info.tasting){w.tasting=info.tasting;document.getElementById('d-tasting').textContent=info.tasting;}
+    if (info.occasion){w.occasion=info.occasion;document.getElementById('d-occasion').textContent=info.occasion;document.getElementById('d-occasion-sec').style.display='block';}
+    save(); showToast('✨ Notas generadas y guardadas.');
+  } catch(e){ showToast('⚠️ No pude generar las notas.'); }
+  btn.disabled=false; btn.innerHTML='✨ Regenerar notas con IA';
+}
+
+// ── PHOTOS — iOS Safari safe ──
+// Two hidden file inputs live outside any modal at the body level.
+// triggerPhoto() just calls .click() on them — reliable on all browsers.
+const _inp = {};
+['front','back'].forEach(side=>{
+  const inp = document.createElement('input');
+  inp.type='file'; inp.accept='image/*'; inp.capture='environment';
+  inp.style.cssText='position:fixed;top:-9999px;left:-9999px;opacity:0;width:1px;height:1px';
+  inp.addEventListener('change', e=>_onPhoto(e,side));
+  document.body.appendChild(inp);
+  _inp[side]=inp;
+});
+
+function triggerPhoto(side) {
+  _inp[side].value=''; // reset so same file can be re-selected
+  _inp[side].click();
+}
+
+function _onPhoto(e, side) {
+  const file=e.target.files[0]; if (!file) return;
+  const fr=new FileReader();
+  fr.onload=ev=>{
+    const original=ev.target.result;
+    // Compress via canvas — target max 800px, quality 0.7 (~80-120KB)
+    const imgEl=new Image();
+    imgEl.onload=()=>{
+      const MAX=800;
+      let {width:w,height:h}=imgEl;
+      if(w>h){ if(w>MAX){h=Math.round(h*MAX/w);w=MAX;} }
+      else    { if(h>MAX){w=Math.round(w*MAX/h);h=MAX;} }
+      const canvas=document.createElement('canvas');
+      canvas.width=w; canvas.height=h;
+      canvas.getContext('2d').drawImage(imgEl,0,0,w,h);
+      const compressed=canvas.toDataURL('image/jpeg',0.72);
+      const b64=compressed.split(',')[1];
+      photos[side]={url:compressed,b64};
+      _showSlotPhoto(side, compressed);
+      document.getElementById('ai-id-btn').disabled=false;
+    };
+    imgEl.src=original;
+  };
+  fr.readAsDataURL(file);
+}
+
+function _showSlotPhoto(side, url) {
+  const img=document.getElementById('slot-'+side+'-img');
+  img.src=url; img.style.display='block';
+  document.getElementById('slot-'+side+'-ico').style.display='none';
+  document.getElementById('slot-'+side+'-lbl').style.opacity='0';
+  document.getElementById('slot-'+side+'-rm').style.opacity='1';
+  document.getElementById('slot-'+side).style.borderStyle='solid';
+  document.getElementById('slot-'+side).style.borderColor='var(--wine)';
+}
+
+function _clearSlot(side) {
+  const img=document.getElementById('slot-'+side+'-img');
+  img.src=''; img.style.display='none';
+  document.getElementById('slot-'+side+'-ico').style.display='';
+  document.getElementById('slot-'+side+'-lbl').style.opacity='1';
+  document.getElementById('slot-'+side+'-rm').style.opacity='0';
+  document.getElementById('slot-'+side).style.borderStyle='dashed';
+  document.getElementById('slot-'+side).style.borderColor='';
+}
+
+function removePhoto(side, e) {
+  e.stopPropagation(); e.preventDefault();
+  photos[side]=null;
+  _clearSlot(side);
+  if (!photos.front && !photos.back) document.getElementById('ai-id-btn').disabled=true;
+}
+
+function resetPhotos() {
+  ['front','back'].forEach(side=>{ photos[side]=null; _clearSlot(side); });
+  document.getElementById('ai-id-btn').disabled=true;
+}
+
+function loadPhotosIntoSlots(w) {
+  ['front','back'].forEach(side=>{
+    const url=w.photos?.[side];
+    const b64=w.photos?.[side+'B64'];
+    if (url) { photos[side]={url,b64:b64||null}; _showSlotPhoto(side,url); }
+    else { photos[side]=null; _clearSlot(side); }
+  });
+  if (w.photos?.front||w.photos?.back) document.getElementById('ai-id-btn').disabled=false;
+}
+
+// ── AI IDENTIFY ──
+async function identifyWine() {
+  const b64=photos.front?.b64||photos.back?.b64; if (!b64) return;
+  const btn=document.getElementById('ai-id-btn');
+  btn.disabled=true; btn.innerHTML=`<div class="dots"><span></span><span></span><span></span></div> Analizando...`;
+  try {
+    const res=await fetch('/api/ai',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,messages:[{role:'user',content:[
+      {type:'image',source:{type:'base64',media_type:'image/jpeg',data:b64}},
+      {type:'text',text:`Analizá esta botella. Respondé SOLO con JSON sin markdown:
+{"name":"nombre sin bodega","winery":"bodega","vintage":"año o NV","type":"Tinto|Blanco|Rosado|Espumante|Champagne|Otro","grape":"varietal/es","region":"región vitivinícola","country":"país","tasting":"notas de cata vívidas en español arg (2-3 oraciones)","occasion":"para qué momento y maridaje (1-2 oraciones)"}`}
+    ]}]})});
+    const data=await res.json();
+    const info=JSON.parse((data.content?.find(c=>c.type==='text')?.text||'').replace(/```json|```/g,'').trim());
+    ['name','winery','vintage','grape','region','country','tasting','occasion'].forEach(k=>{if(info[k])document.getElementById('f-'+k).value=info[k];});
+    if(info.type)document.getElementById('f-type').value=info.type;
+    showToast('✨ Vino identificado. Revisá los datos.');
+  } catch(e){ showToast('⚠️ No pude identificarlo. Completá manualmente.'); }
+  btn.disabled=false; btn.innerHTML='<span>✨</span> Identificar con IA';
+}
+
+// ── EDIT / SAVE ──
+function openEdit() {
+  editId=null; resetPhotos();
+  document.getElementById('edit-title').textContent='Agregar vino';
+  ['f-name','f-winery','f-vintage','f-grape','f-region','f-country','f-price','f-tasting','f-occasion','f-notes'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('f-type').value='Tinto';
+  document.getElementById('f-qty').value=1;
+  document.getElementById('f-country').value='Argentina';
+  document.getElementById('edit-modal').classList.add('open');
+}
+function editWine(id) {
+  const w=wines.find(x=>x.id===id); if (!w) return;
+  editId=id; resetPhotos(); loadPhotosIntoSlots(w);
+  document.getElementById('edit-title').textContent='Editar vino';
+  document.getElementById('f-name').value=w.name||'';
+  document.getElementById('f-winery').value=w.winery||'';
+  document.getElementById('f-vintage').value=w.vintage||'';
+  document.getElementById('f-type').value=w.type||'Tinto';
+  document.getElementById('f-grape').value=w.grape||'';
+  document.getElementById('f-region').value=w.region||'';
+  document.getElementById('f-country').value=w.country||'';
+  document.getElementById('f-price').value=w.price||'';
+  document.getElementById('f-qty').value=w.qty||1;
+  document.getElementById('f-tasting').value=w.tasting||'';
+  document.getElementById('f-occasion').value=w.occasion||'';
+  document.getElementById('f-notes').value=w.notes||'';
+  document.getElementById('edit-modal').classList.add('open');
+}
+function saveWine() {
+  const name=document.getElementById('f-name').value.trim();
+  const winery=document.getElementById('f-winery').value.trim();
+  if (!name||!winery){showToast('⚠️ Nombre y bodega son obligatorios.');return;}
+  const existing=editId?wines.find(x=>x.id===editId):null;
+  const data={
+    id:editId||Date.now(), name, winery,
+    vintage:document.getElementById('f-vintage').value.trim(),
+    type:document.getElementById('f-type').value,
+    grape:document.getElementById('f-grape').value.trim(),
+    region:document.getElementById('f-region').value.trim(),
+    country:document.getElementById('f-country').value.trim(),
+    price:parseFloat(document.getElementById('f-price').value)||0,
+    qty:parseInt(document.getElementById('f-qty').value)||1,
+    tasting:document.getElementById('f-tasting').value.trim(),
+    occasion:document.getElementById('f-occasion').value.trim(),
+    notes:document.getElementById('f-notes').value.trim(),
+    photos:{
+      front:photos.front?.url||null, frontB64:photos.front?.b64||null,
+      back:photos.back?.url||null,   backB64:photos.back?.b64||null
+    },
+    log:existing?.log||[]
+  };
+  if(editId){wines=wines.map(w=>w.id===editId?data:w);showToast('✅ Vino actualizado.');}
+  else{wines.unshift(data);showToast('🍷 Vino agregado a tu bodega.');}
+  save(); renderWines(); closeM('edit-modal');
+}
+function deleteWine(id) {
+  const w=wines.find(x=>x.id===id);
+  if(confirm(`¿Eliminar "${w?.name}" de tu bodega?`)){wines=wines.filter(x=>x.id!==id);save();renderWines();showToast('🗑️ Eliminado.');}
+}
+
+// ── MODALS ──
+function closeM(id){document.getElementById(id).classList.remove('open');}
+function closeOut(e,id){if(e.target===document.getElementById(id))closeM(id);}
+
+// ── TOAST ──
+function showToast(msg) {
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),3200);
+}
+
+// ── PWA ──
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', ()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));
+}
+window.addEventListener('beforeinstallprompt', e=>{
+  e.preventDefault(); deferredPrompt=e;
+  if (!localStorage.getItem('eb_installed')) {
+    setTimeout(()=>document.getElementById('install-banner').classList.add('show'),3000);
+  }
+});
+window.addEventListener('appinstalled', ()=>{
+  localStorage.setItem('eb_installed','1');
+  document.getElementById('install-banner').classList.remove('show');
+  showToast('🎉 ¡App instalada! Buscala en tu pantalla de inicio.');
+});
+function installApp() {
+  if (!deferredPrompt) return;
+  deferredPrompt.prompt();
+  deferredPrompt.userChoice.then(r=>{
+    if(r.outcome==='accepted'){localStorage.setItem('eb_installed','1');}
+    dismissInstall();
+  });
+}
+function dismissInstall() {
+  document.getElementById('install-banner').classList.remove('show');
+  localStorage.setItem('eb_installed','1');
+}
+
+renderWines();
+</script>
+</body>
+</html>
