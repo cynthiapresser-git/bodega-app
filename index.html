@@ -418,6 +418,8 @@ main{max-width:1100px;margin:0 auto;padding:20px 16px}
 <div class="toast" id="toast"></div>
 
 <script>
+// ── API KEY — reemplazá este valor con tu key de console.anthropic.com ──
+const ANTHROPIC_KEY = 'PEGAR_TU_KEY_AQUI';
 
 // ── STATE ──
 let wines = JSON.parse(localStorage.getItem('eb_wines') || '[]');
@@ -642,7 +644,7 @@ Respondé SOLO con JSON válido sin markdown:
     const content = imgB64
       ? [{type:'image',source:{type:'base64',media_type:'image/jpeg',data:imgB64}},{type:'text',text:prompt}]
       : prompt;
-    const res=await fetch('/api/ai',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:700,messages:[{role:'user',content}]})});
+    const res=await fetch('/.netlify/functions/ai',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:700,messages:[{role:'user',content}]})});
     const data=await res.json();
     const info=JSON.parse((data.content?.find(c=>c.type==='text')?.text||'').replace(/```json|```/g,'').trim());
     if (info.tasting){w.tasting=info.tasting;document.getElementById('d-tasting').textContent=info.tasting;}
@@ -744,7 +746,7 @@ async function identifyWine() {
   const btn=document.getElementById('ai-id-btn');
   btn.disabled=true; btn.innerHTML=`<div class="dots"><span></span><span></span><span></span></div> Analizando...`;
   try {
-    const res=await fetch('/api/ai',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,messages:[{role:'user',content:[
+    const res=await fetch('/.netlify/functions/ai',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,messages:[{role:'user',content:[
       {type:'image',source:{type:'base64',media_type:'image/jpeg',data:b64}},
       {type:'text',text:`Analizá esta botella. Respondé SOLO con JSON sin markdown:
 {"name":"nombre sin bodega","winery":"bodega","vintage":"año o NV","type":"Tinto|Blanco|Rosado|Espumante|Champagne|Otro","grape":"varietal/es","region":"región vitivinícola","country":"país","tasting":"notas de cata vívidas en español arg (2-3 oraciones)","occasion":"para qué momento y maridaje (1-2 oraciones)"}`}
